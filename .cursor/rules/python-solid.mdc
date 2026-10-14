@@ -1,0 +1,35 @@
+---
+description: SOLID OOP Python for this package
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python (SOLID)
+
+```python
+# BAD — concrete IO inside policy, many jobs in one class
+class EvaluationManager:
+    def run(self, path: str) -> None:
+        text = open(path).read()
+        score = len(text)
+        open("out.txt", "w").write(str(score))
+
+# GOOD — invert dependencies; one responsibility each
+class PromptLoader(Protocol):
+    def load(self) -> str: ...
+
+class Scorer(Protocol):
+    def score(self, output: str) -> float: ...
+
+class EvaluationRun:
+    def __init__(self, loader: PromptLoader, scorer: Scorer) -> None:
+        self._loader = loader
+        self._scorer = scorer
+
+    def execute(self) -> float:
+        return self._scorer.score(self._loader.load())
+```
+
+- Annotate all public methods. Prefer frozen dataclasses for values.
+- New behaviors add a type that implements a Protocol; do not grow `if` ladders.
+- Fakes in tests implement the same Protocols. Do not inherit for helper reuse.
