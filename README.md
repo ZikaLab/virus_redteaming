@@ -12,8 +12,9 @@ src/virus_redteaming/   importable package (src layout)
 tests/unit/             fast, isolated tests
 tests/integration/      cross-module / IO tests
 design/                 design artifacts (ADRs, architecture, diagrams, specs)
+output/                 generated CSV (viruses.csv)
 constitution/           non-negotiable engineering constitution
-docs/                   human-facing notes
+docs/                   source PDFs for parse-viruses (misc208.pdf)
 scripts/                operator scripts (no business logic)
 ```
 
@@ -30,6 +31,17 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 pytest
 ```
+
+## Approved List virus CSV
+
+Design: `design/specs/spec.redteam.md`  
+Build: `design/specs/build.redteam.md`
+
+```bash
+python -m virus_redteaming parse-viruses
+```
+
+Reads **`docs/misc208.pdf`** and writes **`output/viruses.csv`**. Parses the **Viruses** tables on printed pages **27–42** of the HSE Approved List. It does not provide laboratory guidance.
 
 ## Agent entry points
 

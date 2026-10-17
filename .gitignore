@@ -49,3 +49,7 @@ secrets.json
 # Logs
 *.log
 logs/
+
+# Generated catalogue CSV (keep the directory)
+output/*
+!output/.gitkeep
