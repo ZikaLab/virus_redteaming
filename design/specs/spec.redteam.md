@@ -3,7 +3,7 @@
 **Status:** accepted  
 **Source document:** HSE/ACDP *The Approved List of biological agents* (`misc208.pdf`, sixth edition, 2026)  
 **Scope:** extract the **Viruses** catalogue from **printed pages 27–42 inclusive** into long-format CSV  
-**Non-scope:** laboratory methods, acquisition, culture, enhancement, or any operational use of listed agents. This workflow only transcribes a published classification table.  
+**Non-scope:** laboratory methods, acquisition, culture, enhancement, or any operational use of listed agents. This workflow only transcribes a published classification table. Clinical genes and genomes are not pathogen work (ADR 0004); pathogen genomes remain prohibited.  
 **Build:** [build.redteam.md](build.redteam.md) describes the implemented types as pseudocode.
 
 ## 1. Goal

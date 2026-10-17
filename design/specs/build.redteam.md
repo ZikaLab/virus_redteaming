@@ -2,7 +2,8 @@
 
 **Status:** accepted  
 **Companion spec:** [spec.redteam.md](spec.redteam.md)  
-**Implements:** parse `misc208.pdf` printed pages **27–42** → `output/viruses.csv`
+**Implements:** parse `misc208.pdf` printed pages **27–42** → `output/viruses.csv`  
+**Scope:** clinical genes and genomes are not pathogen work (ADR 0004); pathogen genomes remain prohibited.
 
 This is the build record for the code that exists under `src/virus_redteaming/catalogue/` and `src/virus_redteaming/__main__.py`. Each module is described as pseudocode. Remedies below are the bugs from the first extractor (page 27 → EOF, CSV written to a naked `viruses.csv`).
 

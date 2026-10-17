@@ -2,7 +2,8 @@
 
 **Status:** accepted  
 **Companion spec:** [spec.schedule5.md](spec.schedule5.md)  
-**Target:** annotate `output/viruses.csv` so **Schedule 5** is `1` or `0`
+**Target:** annotate `output/viruses.csv` so **Schedule 5** is `1` or `0`  
+**Scope:** clinical genes and genomes are not pathogen work (ADR 0004); pathogen genomes remain prohibited.
 
 ## Execution rule
 

@@ -4,7 +4,6 @@
 **Applies to:** every contributor and every coding agent (Claude Code, Cursor, and this harness)  
 **Canonical copy:** this file. Other agent files only point here.
 
-This project is an **AI/LLM red-teaming** research codebase. It is **not** a biological, chemical, or weapons project. Do not add pathogen, synthesis, or exploit-payload content.
 
 ## I. Non-negotiables
 
