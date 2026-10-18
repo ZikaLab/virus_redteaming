@@ -110,13 +110,13 @@ def test_fasta_source_rejects_wrong_count_or_id() -> None:
         FastaFetchSource(_Fetch(">NG_1\n\n"), identity).fetch("NG_1")
 
 
-def test_length_cutoff_default_is_8000_and_is_exclusive() -> None:
+def test_length_cutoff_default_is_7000_and_is_exclusive() -> None:
     cutoff = LengthCutoff()
-    assert cutoff.DEFAULT_BP == 8000
+    assert cutoff.DEFAULT_BP == 7000
     assert cutoff.MAX_SLEN == 999_999_999
-    assert cutoff.accepts(8000) is False
-    assert cutoff.accepts(8001) is True
-    assert cutoff.slen_clause() == "8001:999999999[SLEN]"
+    assert cutoff.accepts(7000) is False
+    assert cutoff.accepts(7001) is True
+    assert cutoff.slen_clause() == "7001:999999999[SLEN]"
 
 
 def test_download_min_length_overrides_default(tmp_path: Path) -> None:
@@ -129,7 +129,7 @@ def test_download_min_length_overrides_default(tmp_path: Path) -> None:
     )
     paths = download.run()
     assert [path.name for path in paths] == ["LONG.fasta"]
-    assert LengthCutoff.DEFAULT_BP == 8000
+    assert LengthCutoff.DEFAULT_BP == 7000
 
 
 def test_download_skips_short_records_and_fails_when_none_remain(
