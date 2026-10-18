@@ -6,27 +6,45 @@ from pathlib import Path
 
 from virus_redteaming.clinical_fasta.accession_list import AccessionList
 from virus_redteaming.clinical_fasta.accession_sink import AtomicAccessionTableSink
-from virus_redteaming.clinical_fasta.accession_source import AccessionCsvSource
+from virus_redteaming.clinical_fasta.accession_source import (
+    AccessionCsvSource,
+    AccessionHitCsvSource,
+)
 from virus_redteaming.clinical_fasta.biopython_entrez import BiopythonEntrezClient
 from virus_redteaming.clinical_fasta.config import NcbiEntrezConfig
+from virus_redteaming.clinical_fasta.criteria_representatives import (
+    CriteriaRepresentativeFiles,
+)
+from virus_redteaming.clinical_fasta.criteria_sink import AtomicCriteriaSink
 from virus_redteaming.clinical_fasta.csv_source import OutputCsvVirusSource
 from virus_redteaming.clinical_fasta.download_workflow import ClinicalFastaDownload
 from virus_redteaming.clinical_fasta.errors import ClinicalFastaError, NcbiConfigError
 from virus_redteaming.clinical_fasta.fasta_encoder import BiopythonFastaEncoder
+from virus_redteaming.clinical_fasta.fasta_measure import FastaMeasure
 from virus_redteaming.clinical_fasta.fasta_source import (
     AccessionIdentity,
     FastaFetchSource,
 )
+from virus_redteaming.clinical_fasta.genes_align import AtomicGenesAligner
+from virus_redteaming.clinical_fasta.header_match import HeaderMatch
 from virus_redteaming.clinical_fasta.length import LengthCutoff
 from virus_redteaming.clinical_fasta.models import SearchResult
+from virus_redteaming.clinical_fasta.parse_workflow import RepresentativeParse
 from virus_redteaming.clinical_fasta.paths import (
     ACCESSION_FILENAME,
+    CRITERIA_FILENAME,
     DEFAULT_QUERY_FILENAME,
     FASTA_DIRECTORY_NAME,
     OUTPUT_DIRECTORY_NAME,
+    REPRESENTATIVE_FILENAME,
     SEARCH_TERM_FILENAME,
     OutputCsvPath,
 )
+from virus_redteaming.clinical_fasta.representative_selection import (
+    RepresentativeSelection,
+)
+from virus_redteaming.clinical_fasta.representative_sink import AtomicRepresentativeSink
+from virus_redteaming.clinical_fasta.screened_words import ScreenedWords
 from virus_redteaming.clinical_fasta.search_term import OutputSearchTermSource
 from virus_redteaming.clinical_fasta.search_workflow import AccessionSearch
 from virus_redteaming.clinical_fasta.sink import AtomicPathFastaSink
@@ -34,7 +52,7 @@ from virus_redteaming.clinical_fasta.term import EntrezTermComposer
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run search or download.
+    """Run search, download, or parse.
 
     ``LengthCutoff.DEFAULT_BP`` and ``LengthCutoff.MAX_SLEN`` live in ``length.py``.
     ``--min-length`` overrides ``DEFAULT_BP`` for one run and does not edit it.
@@ -42,6 +60,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
     try:
+        if args.command == "parse":
+            for path in _parse():
+                print(path)
+            return 0
         cutoff = _cutoff(args.min_length)
         if args.command == "search":
             result = _search(args.filename, cutoff)
@@ -70,6 +92,7 @@ def _parser() -> argparse.ArgumentParser:
     search.add_argument("--min-length", type=int, default=None)
     download = subcommands.add_parser("download")
     download.add_argument("--min-length", type=int, default=None)
+    subcommands.add_parser("parse")
     return parser
 
 
@@ -96,6 +119,24 @@ def _search(filename: str, cutoff: LengthCutoff) -> SearchResult:
         sink=AtomicAccessionTableSink(
             root / OUTPUT_DIRECTORY_NAME / ACCESSION_FILENAME
         ),
+    )
+    return workflow.run()
+
+
+def _parse() -> tuple[Path, Path, Path]:
+    root = Path.cwd()
+    output = root / OUTPUT_DIRECTORY_NAME
+    workflow = RepresentativeParse(
+        group_source=AccessionHitCsvSource(output / ACCESSION_FILENAME),
+        fasta_directory=output / FASTA_DIRECTORY_NAME,
+        screened_words=ScreenedWords(),
+        measure=FastaMeasure(),
+        match=HeaderMatch(),
+        selection=RepresentativeSelection(),
+        criteria_sink=AtomicCriteriaSink(output / CRITERIA_FILENAME),
+        representative_sink=AtomicRepresentativeSink(output / REPRESENTATIVE_FILENAME),
+        representative_source=CriteriaRepresentativeFiles(),
+        genes_aligner=AtomicGenesAligner(output / DEFAULT_QUERY_FILENAME),
     )
     return workflow.run()
 

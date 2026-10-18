@@ -15,7 +15,6 @@ You are working in **zikalab/virus_redteaming**, an AI/LLM red-teaming research 
 ## Must not
 
 - Procedural dumps in `scripts/` or notebooks as the real design
-- Biological / pathogen / weapon content
 - Exploit payloads or attack reproduction steps
 
 When unsure, read the constitution, then the nearest ADR in `design/decisions/`.

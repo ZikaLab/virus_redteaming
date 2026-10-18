@@ -3,7 +3,7 @@
 **Status:** proposed  
 **Companion spec:** [spec.NCBI.md](spec.NCBI.md)  
 **Target:** part 1 writes `output/accessions.csv`; part 2 writes `output/clinical_genes/{accession}.fasta`  
-**Scope:** clinical genes and genomes are not pathogen work (ADR 0004); pathogen genomes remain prohibited.
+**Scope:** clinical genes and genomes are not pathogen work (ADR 0004).
 
 ## Execution rule
 

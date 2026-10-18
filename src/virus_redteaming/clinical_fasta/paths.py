@@ -10,6 +10,8 @@ DEFAULT_QUERY_FILENAME = "genes.csv"
 SEARCH_TERM_FILENAME = "search.txt"
 ACCESSION_FILENAME = "accessions.csv"
 FASTA_DIRECTORY_NAME = "clinical_genes"
+CRITERIA_FILENAME = "accession_criteria.csv"
+REPRESENTATIVE_FILENAME = "NCBI_representative_seq.csv"
 
 
 @dataclass(frozen=True)

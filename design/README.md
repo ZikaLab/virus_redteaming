@@ -2,7 +2,7 @@
 
 This tree is the durable design record for **zikalab/virus_redteaming**. Code follows these files; agents must update them when the architecture changes.
 
-Scope for every artifact in this tree: clinical genes and genomes are not pathogen work. Pathogen work remains prohibited, including virus and other pathogen genomes and pathogen sequence retrieval. See `decisions/0004-clinical-genes-not-pathogen-work.md` and `constitution/CONSTITUTION.md`.
+Scope for every artifact in this tree: clinical genes and genomes are not pathogen work. See `decisions/0004-clinical-genes-not-pathogen-work.md` and `constitution/CONSTITUTION.md`.
 
 | Directory | Put here |
 | --- | --- |

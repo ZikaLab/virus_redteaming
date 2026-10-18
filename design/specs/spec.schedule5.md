@@ -5,7 +5,7 @@
 **Build:** [build.schedule5.md](build.schedule5.md)  
 **Sources:** `docs/schedule5.md` (46 names), `output/viruses.csv` (232 rows)  
 **Inventory (not joined):** `docs/ICTV_RNA_virus_species_MSL41.csv` (7230 rows)  
-**Non-scope:** laboratory methods, acquisition, culture, or operational use of listed agents. This workflow only flags name overlap between two published lists. Clinical genes and genomes are not pathogen work (ADR 0004); pathogen genomes remain prohibited.
+**Non-scope:** laboratory methods, acquisition, culture, or operational use of listed agents. This workflow only flags name overlap between two published lists. Clinical genes and genomes are not pathogen work (ADR 0004).
 
 ## 1. Goal
 

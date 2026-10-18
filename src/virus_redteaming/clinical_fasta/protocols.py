@@ -5,7 +5,13 @@ from typing import Protocol
 
 from Bio.SeqRecord import SeqRecord
 
-from virus_redteaming.clinical_fasta.models import AccessionHit, FastaRecord
+from virus_redteaming.clinical_fasta.models import (
+    AccessionHit,
+    ChosenAccession,
+    CriteriaRow,
+    FastaRecord,
+    MeasuredFasta,
+)
 
 
 class VirusQuerySource(Protocol):
@@ -62,6 +68,55 @@ class FastaEncoder(Protocol):
 
     def encode(self, accession: str, record: SeqRecord) -> FastaRecord:
         """Return FASTA text labelled with the requested accession."""
+
+
+class AccessionGroupSource(Protocol):
+    """Reads Virus, Rank, and Accession in file order."""
+
+    def read(self) -> tuple[AccessionHit, ...]:
+        """Return every accession row, including repeated query cells."""
+
+
+class FastaMeasure(Protocol):
+    """Reads one local FASTA file."""
+
+    def read(self, path: Path) -> MeasuredFasta | None:
+        """Return the measurement, or None when the file is absent."""
+
+
+class CriteriaSink(Protocol):
+    """Persists the criteria table."""
+
+    def write(self, rows: tuple[CriteriaRow, ...] | list[CriteriaRow]) -> Path:
+        """Replace the criteria table and return its path."""
+
+
+class RepresentativeSink(Protocol):
+    """Persists chosen sequences."""
+
+    def write(self, rows: tuple[CriteriaRow, ...] | list[CriteriaRow]) -> Path:
+        """Replace the representative table and return its path."""
+
+
+class CriteriaRepresentativeSource(Protocol):
+    """Reads chosen rows from a criteria table."""
+
+    def read(self) -> tuple[ChosenAccession, ...]:
+        """Return one chosen accession per trimmed query."""
+
+
+class CriteriaRepresentativeOpener(Protocol):
+    """Opens a criteria reader for a path known only after the write."""
+
+    def open(self, path: Path) -> CriteriaRepresentativeSource:
+        """Return a reader bound to the written criteria file."""
+
+
+class GenesAligner(Protocol):
+    """Copies chosen accessions onto the query table."""
+
+    def write(self, chosen: tuple[ChosenAccession, ...]) -> Path:
+        """Replace the query table and return its path."""
 
 
 class FastaSink(Protocol):

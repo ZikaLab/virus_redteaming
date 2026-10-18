@@ -23,7 +23,7 @@ Clinical genes and genomes are not pathogen work under `design/decisions/0004-cl
 
 `output/accessions.csv` has the header `Virus,Rank,Accession`. Rows that share the same `Virus` cell are one query group. A group has at most 5 data rows, ranks 1 through 5. The `Virus` cell is the query text.
 
-A FASTA file has one header line, the line that starts with `>`, and a sequence after that line. Part 2 may have skipped a download, so the FASTA file for an accession may be absent.
+A FASTA file has one header line, the line that starts with `>`, and a sequence after that line. Part 2 may have skipped a download, so the FASTA file for an accession may be absent. A file that is present but empty, does not start with `>`, or contains a second header line is an input error. It is not a scored row.
 
 ## Screened words
 
@@ -69,9 +69,10 @@ Rank the remaining FASTA files by these rules, in this order:
 1. **Words in order, highest priority.** The screened words appear in the header in the same order. Other header words may sit between them. If one or more files have this in-order match, only those files remain candidates.
 2. **Words adjacent, next.** Among the files still in play, prefer those where the screened words also sit next to each other, in that order, with no header word between them. Adjacent is the tighter form of the same order. It breaks ties among in-order matches. If no file is in order, none can be adjacent, and selection continues at rule 3.
 3. **Highest word match.** When no file has the screened words in order, count how many distinct screened words appear in the header. Keep only the files with the highest count. A count of 0 is not a candidate.
-4. **Largest gene length.** Among the files still tied, keep the longest sequence at or below 40,000 bp.
+4. **Lowest match-continuation penalty.** Among the files still tied, prefer the header that extends each matched word the least. For every matched word, find each case-insensitive whole-word occurrence in the original header. After that occurrence, count alphanumeric words until the end of the header or one of `,`, `;`, `:`, `(`, `)`, `[`, `]`, or `/`. Repeated occurrences of one word keep the lowest count. Add those counts. The sum is `MatchContinuationPenalty`. A lower sum is more specific. This rule does not apply when an in-order candidate exists.
+5. **Largest gene length.** Among the files still tied, keep the longest sequence at or below 40,000 bp.
 
-If two files are still tied after rule 4, keep the one with the lower `Rank` in `output/accessions.csv`.
+If two files are still tied after rule 5, keep the one with the lower `Rank` in `output/accessions.csv`.
 
 ## Failure report
 
@@ -101,7 +102,7 @@ Text written to `output/accession_criteria.csv` escapes a backslash as `\\` and 
 One row per accession, in the same order as `output/accessions.csv`.
 
 ```csv
-Query,Rank,Accession,ScreenedWords,InOrderMatch,AdjacentMatch,WordMatchCount,MatchedWords,GeneLength,WithinUpperCutoff,Header,Failure,Representative
+Query,Rank,Accession,ScreenedWords,InOrderMatch,AdjacentMatch,WordMatchCount,MatchedWords,MatchContinuationPenalty,GeneLength,WithinUpperCutoff,Header,Failure,Representative
 ```
 
 | Column | Value |
@@ -114,6 +115,7 @@ Query,Rank,Accession,ScreenedWords,InOrderMatch,AdjacentMatch,WordMatchCount,Mat
 | `AdjacentMatch` | `1` when those words also appear next to each other in that order; else `0` |
 | `WordMatchCount` | Count of distinct screened words found in the header |
 | `MatchedWords` | Those matched words in screened order, joined by `;` |
+| `MatchContinuationPenalty` | Sum of the shortest continuation counts for the matched words. Empty when the FASTA file is missing. `0` when no screened word matched |
 | `GeneLength` | Sequence length in bp after the header line. Empty when the FASTA file is missing |
 | `WithinUpperCutoff` | `1` when `GeneLength` is present and `GeneLength <= 40000`; else `0` |
 | `Header` | The FASTA header line without the leading `>`, with commas escaped. Empty when the FASTA file is missing |
