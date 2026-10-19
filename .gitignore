@@ -53,3 +53,6 @@ logs/
 # Generated catalogue CSV (keep the directory)
 output/*
 !output/.gitkeep
+
+# Local documents stay on disk and are not published
+/docs/

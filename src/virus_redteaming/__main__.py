@@ -35,6 +35,7 @@ from virus_redteaming.category1.except_sample import (
 from virus_redteaming.category1.inventory import CatalogueGenusIndex
 from virus_redteaming.category1.workflow import BuildCategory1
 from virus_redteaming.category1.write import IctvCat1Writer, NenReader, NenWriter
+from virus_redteaming.claude_harness.config import ClaudeApiConfig
 from virus_redteaming.clinical_fasta.biopython_entrez import BiopythonEntrezClient
 from virus_redteaming.clinical_fasta.errors import NcbiConfigError
 from virus_redteaming.clinical_fasta.fasta_encoder import BiopythonFastaEncoder
@@ -162,6 +163,28 @@ def build_parser() -> argparse.ArgumentParser:
         default=Path("output/NCBI_fasta"),
         help="FASTA directory (default: output/NCBI_fasta)",
     )
+    red_team = sub.add_parser(
+        "claude-red-team",
+        help="Send prepared FASTA files to Claude and write the response CSV",
+    )
+    red_team.add_argument(
+        "--csv",
+        type=Path,
+        default=Path("output/HSE-virus_Cat1-virus_merged.csv"),
+        help="Merged table (default: output/HSE-virus_Cat1-virus_merged.csv)",
+    )
+    red_team.add_argument(
+        "--fasta",
+        type=Path,
+        default=Path("output/NCBI_fasta"),
+        help="FASTA directory (default: output/NCBI_fasta)",
+    )
+    red_team.add_argument(
+        "--out",
+        type=Path,
+        default=Path("output/claude_red-team_response.csv"),
+        help="Response CSV (default: output/claude_red-team_response.csv)",
+    )
     return parser
 
 
@@ -209,6 +232,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "fetch-ncbi-fasta":
         return _print_ncbi_fasta(args.csv, args.out)
+    if args.command == "claude-red-team":
+        return _print_claude_red_team(args.csv, args.fasta, args.out)
     raise SystemExit(2)
 
 
@@ -282,6 +307,66 @@ def _annotate_schedule5() -> AnnotateSchedule5:
         writer=Schedule5CsvWriter(),
         unmatched_sink=UnmatchedNameSink(),
     )
+
+
+def _print_claude_red_team(csv_path: Path, fasta_dir: Path, out_path: Path) -> int:
+    from dotenv import load_dotenv
+
+    from virus_redteaming.claude_harness.config import ClaudeApiConfig
+    from virus_redteaming.claude_harness.errors import (
+        MissingClaudeApiKeyError,
+        redact_client_error,
+    )
+    from virus_redteaming.core.errors import VirusRedteamingError
+
+    load_dotenv(override=True)
+    try:
+        config = ClaudeApiConfig.from_environment()
+    except MissingClaudeApiKeyError as exc:
+        print(exc, file=sys.stderr)
+        return 2
+    try:
+        _run_claude_red_team(config, csv_path, fasta_dir, out_path)
+    except VirusRedteamingError as exc:
+        print(redact_client_error(exc), file=sys.stderr)
+        return 1
+    return 0
+
+
+def _run_claude_red_team(
+    config: ClaudeApiConfig,
+    csv_path: Path,
+    fasta_dir: Path,
+    out_path: Path,
+) -> None:
+    from virus_redteaming.claude_harness.anthropic_chat import AnthropicChat
+    from virus_redteaming.claude_harness.layers import HarnessLayer
+    from virus_redteaming.claude_harness.prompt import SequencePrompt
+    from virus_redteaming.claude_harness.sequence import FastaSequence
+    from virus_redteaming.claude_harness.sink import RedTeamReportWriter
+    from virus_redteaming.claude_harness.source import MergedRedTeamSource
+    from virus_redteaming.claude_harness.timed_chat import TimedChat
+    from virus_redteaming.claude_harness.upload import SequenceUpload
+    from virus_redteaming.claude_harness.workflow import (
+        ClaudePing,
+        RedTeamBatch,
+        RedTeamExchange,
+    )
+
+    chat = AnthropicChat(config, timeout=180.0, max_tokens=4096)
+    ping = ClaudePing(TimedChat(chat))
+    RedTeamBatch(
+        source=MergedRedTeamSource(csv_path),
+        fasta=FastaSequence(fasta_dir),
+        exchange=RedTeamExchange(
+            ping,
+            SequenceUpload(config, fasta_dir),
+            SequencePrompt(),
+            fasta_dir,
+        ),
+        writer=RedTeamReportWriter(out_path),
+        width=HarnessLayer.LIVE.chain_count(),
+    ).run()
 
 
 if __name__ == "__main__":

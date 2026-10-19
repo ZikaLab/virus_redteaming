@@ -48,7 +48,7 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q --strict-markers"
 markers = [
-  "network: calls NCBI; opt-in via NCBI_LIVE_TEST=1",
+  "network: calls NCBI or Claude; opt-in via NCBI_LIVE_TEST=1 or CLAUDE_LIVE_TEST=1",
 ]
 
 [tool.ruff]
@@ -81,5 +81,7 @@ module = [
   "langchain_anthropic",
   "langchain_core",
   "langchain_core.*",
+  "anthropic",
+  "anthropic.*",
 ]
 ignore_missing_imports = true

@@ -21,7 +21,7 @@ class _FakeChat:
         self._reply = reply
         self.prompts: list[str] = []
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, file_id: str | None = None) -> str:
         self.prompts.append(prompt)
         return self._reply
 
@@ -99,7 +99,7 @@ def test_parallel_layer_runs_twenty_chains() -> None:
     prompts = tuple(f"chain-{index}" for index in range(20))
 
     class _GatedChat:
-        def complete(self, prompt: str) -> str:
+        def complete(self, prompt: str, file_id: str | None = None) -> str:
             barrier.wait(timeout=5)
             return prompt
 
@@ -118,7 +118,7 @@ def test_live_layer_runs_twenty_chains_on_the_injected_client() -> None:
     prompts = tuple(f"live-{index}" for index in range(20))
 
     class _GatedChat:
-        def complete(self, prompt: str) -> str:
+        def complete(self, prompt: str, file_id: str | None = None) -> str:
             barrier.wait(timeout=5)
             return prompt
 
