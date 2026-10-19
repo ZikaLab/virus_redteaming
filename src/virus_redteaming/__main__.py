@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from virus_redteaming.catalogue.csv_sink import LongFormatCsvWriter
@@ -34,6 +35,15 @@ from virus_redteaming.category1.except_sample import (
 from virus_redteaming.category1.inventory import CatalogueGenusIndex
 from virus_redteaming.category1.workflow import BuildCategory1
 from virus_redteaming.category1.write import IctvCat1Writer, NenReader, NenWriter
+from virus_redteaming.clinical_fasta.biopython_entrez import BiopythonEntrezClient
+from virus_redteaming.clinical_fasta.errors import NcbiConfigError
+from virus_redteaming.clinical_fasta.fasta_encoder import BiopythonFastaEncoder
+from virus_redteaming.clinical_fasta.fasta_source import (
+    AccessionIdentity,
+    FastaFetchSource,
+)
+from virus_redteaming.clinical_fasta.sink import AtomicPathFastaSink
+from virus_redteaming.core.errors import VirusRedteamingError
 from virus_redteaming.hse_cat1_merge.io import (
     Cat1CsvReader,
     HseCsvReader,
@@ -42,6 +52,12 @@ from virus_redteaming.hse_cat1_merge.io import (
 )
 from virus_redteaming.hse_cat1_merge.order import MergedTableOrder
 from virus_redteaming.hse_cat1_merge.workflow import MergeHseAndCat1
+from virus_redteaming.ncbi_fasta.cache import DirectoryFastaCache
+from virus_redteaming.ncbi_fasta.config import entrez_config_from_environment
+from virus_redteaming.ncbi_fasta.models import FetchNcbiFastaReport
+from virus_redteaming.ncbi_fasta.parse import GenBankSegmentParser
+from virus_redteaming.ncbi_fasta.source import MergedGenBankSource
+from virus_redteaming.ncbi_fasta.workflow import NcbiFastaDownload
 from virus_redteaming.nen_accession.index import ExemplarIndexFactory
 from virus_redteaming.nen_accession.io import (
     NenAccessionWriter,
@@ -130,6 +146,22 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("output/HSE-virus_Cat1-virus_merged.csv"),
     )
+    fetch = sub.add_parser(
+        "fetch-ncbi-fasta",
+        help="Download FASTA for GenBank accessions in the merged table",
+    )
+    fetch.add_argument(
+        "--csv",
+        type=Path,
+        default=Path("output/HSE-virus_Cat1-virus_merged.csv"),
+        help="Merged table (default: output/HSE-virus_Cat1-virus_merged.csv)",
+    )
+    fetch.add_argument(
+        "--out",
+        type=Path,
+        default=Path("output/NCBI_fasta"),
+        help="FASTA directory (default: output/NCBI_fasta)",
+    )
     return parser
 
 
@@ -175,6 +207,8 @@ def main(argv: list[str] | None = None) -> int:
         count = _merge_hse_cat1().run(args.nen, args.cat1, args.vmr, args.out)
         print(f"wrote {count} rows to {args.out}")
         return 0
+    if args.command == "fetch-ncbi-fasta":
+        return _print_ncbi_fasta(args.csv, args.out)
     raise SystemExit(2)
 
 
@@ -198,6 +232,35 @@ def _assign_nen_accessions() -> AssignNenAccessions:
         parser=GenBankAccessionParser(),
         index_factory=ExemplarIndexFactory(),
     )
+
+
+def _print_ncbi_fasta(csv_path: Path, out_dir: Path) -> int:
+    try:
+        report = _fetch_ncbi_fasta(csv_path, out_dir)
+    except NcbiConfigError as exc:
+        print(exc, file=sys.stderr)
+        return 2
+    except VirusRedteamingError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    for path in report.written:
+        print(path)
+    print(f"skipped {report.blank_rows} blank rows")
+    print(f"cached {len(report.cached)} accessions")
+    print(f"fetched {len(report.written)} accessions")
+    return 0
+
+
+def _fetch_ncbi_fasta(csv_path: Path, out_dir: Path) -> FetchNcbiFastaReport:
+    identity = AccessionIdentity()
+    client = BiopythonEntrezClient(entrez_config_from_environment())
+    return NcbiFastaDownload(
+        source=MergedGenBankSource(csv_path, GenBankSegmentParser()),
+        cache=DirectoryFastaCache(out_dir, identity),
+        records=FastaFetchSource(client, identity),
+        encoder=BiopythonFastaEncoder(),
+        sink=AtomicPathFastaSink(out_dir),
+    ).run()
 
 
 def _merge_hse_cat1() -> MergeHseAndCat1:
