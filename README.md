@@ -148,6 +148,31 @@ ICTV virus,Claude response,ICTV family,ICTV genus,Human pathogen hazard group,Sc
 
 A missing `ANTHROPIC_API_KEY` exits `2`. The key is read from the environment or from `.env`. Other failures exit `1`. Flags: `--csv`, `--fasta`, `--sequences`, `--out`.
 
+## How the LangGraph harness is called
+
+The graph is one node. `src/virus_redteaming/claude_harness/graph.py` defines `build_ping_graph`. That function builds a `StateGraph` with a single node named `claude`, an edge from `START` to `claude`, and an edge from `claude` to `END`. The node calls `chat.complete(prompt)` or, when the state carries a `file_id`, `chat.complete(prompt, file_id=file_id)`.
+
+`ClaudePing` in `src/virus_redteaming/claude_harness/workflow.py` is the only type that compiles the graph. Its constructor calls `build_ping_graph(chat).compile()` once. Every later call reuses that compiled graph. `ClaudePing.run` builds a fresh state, `{"prompt": prompt, "reply": ""}`, adds `file_id` when one was passed, and calls `invoke` on the compiled graph. An empty reply raises `EmptyClaudeReplyError`. Chains do not share a state.
+
+`claude-red-team` does not call `ClaudePing.run_layer`. `__main__.py` builds one client and one ping:
+
+```text
+AnthropicChat(config, timeout=180, max_tokens=4096)
+TimedChat(that client)
+ClaudePing(that timed chat)
+```
+
+`TimedChat` is the `ChatTurn` inside the node, so each `invoke` is the three-minute wait around one Anthropic call. `RedTeamBatch` then runs waves of 20. Inside a wave, a thread pool calls `RedTeamExchange.run` once per accession. That method uploads the sequence and calls `ClaudePing.run` twice on the same compiled graph: first the residue-count prompt, then, only after a completed non-empty reply, the secondary-structure prompt. Both invokes send the same `file_id`.
+
+`ClaudePing.run_layer` is the other entry. It is used by the plain-string ping, not by the sequence command. The prompt list must be exactly as long as the layer: 1 for `HarnessLayer.TEST`, 20 for `TEST_PARALLEL` and `LIVE`. `TEST` calls `run` once on the caller thread. The other two layers start a pool of 20 workers and call `run` once per prompt. A ping omits `file_id`.
+
+```bash
+python scripts/claude_ping.py
+python scripts/claude_ping.py test-batch
+```
+
+With no argument, the script selects `HarnessLayer.LIVE` and calls `ClaudePing.run_layer` with the same prompt on all 20 chains. The model is `ANTHROPIC_MODEL`, or `claude-haiku-5-5` when that variable is blank. `test-batch` constructs `HaikuBatch`, which pins the model to `claude-haiku-5-5` and calls `run_layer` with `HarnessLayer.TEST_PARALLEL`. Each of those 20 prompts asks for `pong` and the chain number.
+
 ## Clinical FASTA workflow
 
 This path does not use the merged table or `output/NCBI_fasta`. It searches NCBI nucleotide by virus name, then downloads the hits that pass a length cutoff.
