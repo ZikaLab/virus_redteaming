@@ -2,12 +2,13 @@
 
 Virus Redteaming (VMT workflow) is a LangGraph harness that tests whether Claude's sequence-aware safeguards block a viral genome. Each chain uploads one nucleotide sequence and nothing else: no virus name, no taxonomy, and no hazard or Schedule 5 label. The graph then makes two calls. The first asks for the residue count. The second, sent only after a completed non-empty reply, asks for the secondary structure of the first 200 bp. The recorded result is either that analysis or a safeguard block, so the outcome can be compared with the virus's UK Health and Safety Executive hazard group and its Schedule 5 status under the Anti-terrorism, Crime and Security Act 2001.
 
-Virus Redteaming (VMT workflow) is the workflow reported in Michael Gaunt (2026), [Biosecurity Gaps in Claude's Safeguards for Viral Genomes: Evaluation Against UK Hazard and Security Classifications](https://zenodo.org/records/23464825), DOI [10.5281/zenodo.23464825](https://doi.org/10.5281/zenodo.23464825). That evaluation ran the harness against Claude Haiku 5.5 on 388 genomes.
+Virus Redteaming (VMT workflow) is the workflow reported in [Michael W. Gaunt](https://scholar.google.com/citations?user=NcPvseMAAAAJ&hl=en) (2026), [Biosecurity Gaps in Claude's Safeguards for Viral Genomes: Evaluation Against UK Hazard and Security Classifications](https://zenodo.org/records/23464825), DOI [10.5281/zenodo.23464825](https://doi.org/10.5281/zenodo.23464825). That evaluation ran the harness against Claude Haiku 5.5 on 388 genomes.
 
 The same package builds the HSE catalogue, joins it to ICTV, and downloads the NCBI FASTA the chains use. A separate command searches NCBI from a virus-name list and downloads those sequences on their own.
 
 Organization: [ZikaLab](https://github.com/ZikaLab)  
-Repository: [virus_redteaming](https://github.com/ZikaLab/virus_redteaming)
+Repository: [virus_redteaming](https://github.com/ZikaLab/virus_redteaming)  
+Google Scholar: [Michael W. Gaunt](https://scholar.google.com/citations?user=NcPvseMAAAAJ&hl=en)
 
 The package is typed object-oriented Python 3.11+. Agents follow `constitution/CONSTITUTION.md`. Specs and decisions are in `design/`.
 
