@@ -31,16 +31,17 @@ def test_one_short_sequence_returns_a_count(tmp_path: Path) -> None:
     fasta = tmp_path / "V00603.fasta"
     fasta.write_text(">fixture\nACGTACGTACGT\n", encoding="utf-8")
 
-    prepared = FastaSequence(tmp_path).prepare("V00603")
+    sequences = tmp_path / "sequences"
+    prepared = FastaSequence(tmp_path, sequences).prepare("V00603")
     assert prepared is not None
     config = ClaudeApiConfig.from_environment()
     chat = AnthropicChat(config, timeout=180.0, max_tokens=4096)
-    store = SequenceUpload(config, tmp_path)
+    store = SequenceUpload(config, sequences)
     result = RedTeamExchange(
         ClaudePing(TimedChat(chat)),
         store,
         SequencePrompt(),
-        tmp_path,
+        sequences,
     ).run(
         RedTeamRow(
             virus="fixture",

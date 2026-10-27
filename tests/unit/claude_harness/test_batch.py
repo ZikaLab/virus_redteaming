@@ -150,7 +150,7 @@ def test_missing_fasta_writes_no_sequence_without_a_call(tmp_path: Path) -> None
     rows = (row(accession="MISSING"),)
     RedTeamBatch(
         _Source(rows),
-        FastaSequence(tmp_path),
+        FastaSequence(tmp_path, tmp_path / "sequences"),
         exchange,
         writer,
         width=20,
@@ -206,3 +206,19 @@ def test_blank_key_and_accession_are_skipped(tmp_path: Path) -> None:
         width=20,
     ).run()
     assert writer.rows == ()
+
+
+def test_each_wave_is_written_before_the_run_finishes() -> None:
+    class _Writer:
+        def __init__(self) -> None:
+            self.calls: list[int] = []
+
+        def write(self, rows: tuple[RedTeamResult, ...]) -> None:
+            self.calls.append(len(rows))
+
+    writer = _Writer()
+    rows = tuple(
+        row(virus=str(index), accession=f"A{index:02d}") for index in range(21)
+    )
+    RedTeamBatch(_Source(rows), _Prepare(), _Exchange(), writer, width=20).run()
+    assert writer.calls == [20, 21, 21]

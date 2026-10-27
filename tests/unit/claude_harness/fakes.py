@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from virus_redteaming.claude_harness.models import RedTeamResult, RedTeamRow
+from virus_redteaming.claude_harness.sequence import prepared_name
 
 
 class ScriptedChat:
@@ -33,7 +34,7 @@ class RecordingStore:
     def upload(self, accession: str) -> str:
         if self.fail is not None:
             raise self.fail
-        self.bodies.append((self.directory / f"{accession}.tmp").read_bytes())
+        self.bodies.append((self.directory / prepared_name(accession)).read_bytes())
         self.uploads.append(accession)
         return f"file_{accession}"
 

@@ -1,4 +1,4 @@
-"""Replace the response CSV only after every selected row is ready."""
+"""Replace the response CSV as finished rows become available."""
 
 import csv
 import os
@@ -23,6 +23,11 @@ class RedTeamReportWriter:
 
     def __init__(self, path: Path) -> None:
         self._path = path
+
+    @property
+    def path(self) -> Path:
+        """The CSV this writer replaces."""
+        return self._path
 
     def write(self, rows: tuple[RedTeamResult, ...]) -> None:
         """Replace ``path``. A failure before the replace leaves the previous file."""

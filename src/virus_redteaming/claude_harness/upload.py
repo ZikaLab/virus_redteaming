@@ -1,9 +1,10 @@
-"""Post a ``.tmp`` sequence to the Files API and delete it after the chain."""
+"""Post a prepared sequence to the Files API and delete it after the chain."""
 
 from pathlib import Path
 from typing import Any, Protocol
 
 from virus_redteaming.claude_harness.config import ClaudeApiConfig
+from virus_redteaming.claude_harness.sequence import prepared_name
 from virus_redteaming.core.errors import VirusRedteamingError
 
 _BETA = "files-api-2025-04-14"
@@ -62,7 +63,7 @@ class AnthropicFilePoster:
 
 
 class SequenceUpload:
-    """Read ``{accession}.tmp`` and post it as ``sequence.txt``."""
+    """Read the prepared sequence and post it as ``sequence.txt``."""
 
     def __init__(
         self,
@@ -74,8 +75,8 @@ class SequenceUpload:
         self._poster = poster if poster is not None else AnthropicFilePoster(config)
 
     def upload(self, accession: str) -> str:
-        """Post the prepared ``.tmp`` file and return its ``file_id``."""
-        body = (self._directory / f"{accession}.tmp").read_bytes()
+        """Post the prepared sequence file and return its ``file_id``."""
+        body = (self._directory / prepared_name(accession)).read_bytes()
         return self._poster.post(
             filename="sequence.txt",
             body=body,

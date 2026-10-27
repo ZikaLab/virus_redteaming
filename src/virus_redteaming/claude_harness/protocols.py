@@ -14,11 +14,19 @@ class ChatTurn(Protocol):
         ...
 
 
+class RunLog(Protocol):
+    """Progress lines. They do not carry virus, family, genus, hazard, or schedule."""
+
+    def line(self, text: str) -> None:
+        """Emit one progress line."""
+        ...
+
+
 class SequenceStore(Protocol):
     """Upload one local sequence and delete the remote file."""
 
     def upload(self, accession: str) -> str:
-        """Post ``{accession}.tmp`` and return its ``file_id``."""
+        """Post the prepared sequence file and return its ``file_id``."""
         ...
 
     def delete(self, file_id: str) -> None:

@@ -8,12 +8,21 @@ from virus_redteaming.claude_harness.prompt import SequencePrompt
 from virus_redteaming.claude_harness.workflow import ClaudePing, RedTeamExchange
 
 
+class _Log:
+    def __init__(self) -> None:
+        self.lines: list[str] = []
+
+    def line(self, text: str) -> None:
+        self.lines.append(text)
+
+
 def _exchange(
     tmp_path: Path,
     chat: ScriptedChat,
     store: RecordingStore | None = None,
+    log: _Log | None = None,
 ) -> tuple[RedTeamExchange, RecordingStore]:
-    body = tmp_path / "V00603.tmp"
+    body = tmp_path / "V00603.txt"
     body.write_bytes(b"ACGT ACGT\nTTTT\n")
     used = store if store is not None else RecordingStore(tmp_path)
     exchange = RedTeamExchange(
@@ -21,19 +30,24 @@ def _exchange(
         used,
         SequencePrompt(),
         tmp_path,
+        log,
     )
     return exchange, used
 
 
 def test_second_call_reuses_the_same_file_id(tmp_path: Path) -> None:
     chat = ScriptedChat(["2341", "((((....))))"])
-    exchange, store = _exchange(tmp_path, chat)
+    printed = _Log()
+    exchange, store = _exchange(tmp_path, chat, log=printed)
     result = exchange.run(row())
     assert store.uploads == ["V00603"]
     assert chat.calls[0][1] == chat.calls[1][1] == "file_V00603"
     assert result.claude_response == "2341"
     assert result.secondary_structure == "((((....))))"
     assert store.deletes == ["file_V00603"]
+    text = "\n".join(printed.lines)
+    assert "count reply:\n2341" in text
+    assert "structure reply:\n((((....))))" in text
 
 
 def test_count_reply_stores_a_number_or_the_first_line(tmp_path: Path) -> None:
@@ -100,10 +114,15 @@ def test_structure_timeout_stores_no_response(tmp_path: Path) -> None:
 
 def test_api_key_is_redacted(tmp_path: Path) -> None:
     secret = "sk-ant-abc_DEF-123"
-    chat = ScriptedChat([RuntimeError(f"bad key {secret} {tmp_path / 'V00603.tmp'}")])
-    exchange, store = _exchange(tmp_path, chat)
+    printed = _Log()
+    chat = ScriptedChat([RuntimeError(f"bad key {secret} {tmp_path / 'V00603.txt'}")])
+    exchange, store = _exchange(tmp_path, chat, log=printed)
     result = exchange.run(row())
     assert secret not in result.claude_response
     assert "***" in result.claude_response
-    assert str(tmp_path / "V00603.tmp") not in result.claude_response
+    assert str(tmp_path / "V00603.txt") not in result.claude_response
     assert store.deletes == ["file_V00603"]
+    text = "\n".join(printed.lines)
+    assert "count failed:" in text
+    assert secret not in text
+    assert "***" in text

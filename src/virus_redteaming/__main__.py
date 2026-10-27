@@ -180,6 +180,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="FASTA directory (default: output/NCBI_fasta)",
     )
     red_team.add_argument(
+        "--sequences",
+        type=Path,
+        default=Path("output/claude_red-team_sequences"),
+        help="Prepared sequence directory (default: output/claude_red-team_sequences)",
+    )
+    red_team.add_argument(
         "--out",
         type=Path,
         default=Path("output/claude_red-team_response.csv"),
@@ -233,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "fetch-ncbi-fasta":
         return _print_ncbi_fasta(args.csv, args.out)
     if args.command == "claude-red-team":
-        return _print_claude_red_team(args.csv, args.fasta, args.out)
+        return _print_claude_red_team(args.csv, args.fasta, args.sequences, args.out)
     raise SystemExit(2)
 
 
@@ -309,7 +315,9 @@ def _annotate_schedule5() -> AnnotateSchedule5:
     )
 
 
-def _print_claude_red_team(csv_path: Path, fasta_dir: Path, out_path: Path) -> int:
+def _print_claude_red_team(
+    csv_path: Path, fasta_dir: Path, sequences_dir: Path, out_path: Path
+) -> int:
     from dotenv import load_dotenv
 
     from virus_redteaming.claude_harness.config import ClaudeApiConfig
@@ -326,7 +334,7 @@ def _print_claude_red_team(csv_path: Path, fasta_dir: Path, out_path: Path) -> i
         print(exc, file=sys.stderr)
         return 2
     try:
-        _run_claude_red_team(config, csv_path, fasta_dir, out_path)
+        _run_claude_red_team(config, csv_path, fasta_dir, sequences_dir, out_path)
     except VirusRedteamingError as exc:
         print(redact_client_error(exc), file=sys.stderr)
         return 1
@@ -337,10 +345,12 @@ def _run_claude_red_team(
     config: ClaudeApiConfig,
     csv_path: Path,
     fasta_dir: Path,
+    sequences_dir: Path,
     out_path: Path,
 ) -> None:
     from virus_redteaming.claude_harness.anthropic_chat import AnthropicChat
     from virus_redteaming.claude_harness.layers import HarnessLayer
+    from virus_redteaming.claude_harness.progress import StdoutLog
     from virus_redteaming.claude_harness.prompt import SequencePrompt
     from virus_redteaming.claude_harness.sequence import FastaSequence
     from virus_redteaming.claude_harness.sink import RedTeamReportWriter
@@ -353,19 +363,29 @@ def _run_claude_red_team(
         RedTeamExchange,
     )
 
+    log = StdoutLog(path=out_path.with_name("claude_red-team.log"))
+    width = HarnessLayer.LIVE.chain_count()
+    sequences_dir.mkdir(parents=True, exist_ok=True)
+    log.line(f"claude-red-team: FASTA source: {fasta_dir}")
+    log.line(f"claude-red-team: sequence directory: {sequences_dir}")
+    log.line(f"claude-red-team: output: {out_path}")
+    log.line(f"claude-red-team: log: {out_path.with_name('claude_red-team.log')}")
+    log.line(f"claude-red-team: {width} parallel chains")
     chat = AnthropicChat(config, timeout=180.0, max_tokens=4096)
     ping = ClaudePing(TimedChat(chat))
     RedTeamBatch(
         source=MergedRedTeamSource(csv_path),
-        fasta=FastaSequence(fasta_dir),
+        fasta=FastaSequence(fasta_dir, sequences_dir),
         exchange=RedTeamExchange(
             ping,
-            SequenceUpload(config, fasta_dir),
+            SequenceUpload(config, sequences_dir),
             SequencePrompt(),
-            fasta_dir,
+            sequences_dir,
+            log,
         ),
         writer=RedTeamReportWriter(out_path),
-        width=HarnessLayer.LIVE.chain_count(),
+        width=width,
+        log=log,
     ).run()
 
 

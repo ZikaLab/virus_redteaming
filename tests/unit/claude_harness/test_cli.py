@@ -32,6 +32,8 @@ def test_bad_table_exits_1(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
                 str(missing),
                 "--fasta",
                 str(tmp_path),
+                "--sequences",
+                str(tmp_path / "sequences"),
                 "--out",
                 str(tmp_path / "out.csv"),
             ]
@@ -95,6 +97,8 @@ def test_command_assembles_one_graph(
                 str(table),
                 "--fasta",
                 str(tmp_path),
+                "--sequences",
+                str(tmp_path / "sequences"),
                 "--out",
                 str(tmp_path / "out.csv"),
             ]

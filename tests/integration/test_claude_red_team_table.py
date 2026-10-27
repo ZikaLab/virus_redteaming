@@ -14,7 +14,7 @@ _TABLE = _REPO / "output" / "HSE-virus_Cat1-virus_merged.csv"
 _FASTA = _REPO / "output" / "NCBI_fasta"
 
 
-def test_merged_table_selects_first_codes_only() -> None:
+def test_merged_table_selects_first_codes_only(tmp_path: Path) -> None:
     if not _TABLE.is_file():
         pytest.skip("merged table is not in the workspace")
     rows = MergedRedTeamSource(_TABLE).read()
@@ -33,7 +33,7 @@ def test_merged_table_selects_first_codes_only() -> None:
                 continue
             fasta = _FASTA / f"{row.accession}.fasta"
             assert fasta.is_file(), row.accession
-            prepared = FastaSequence(_FASTA).prepare(row.accession)
+            prepared = FastaSequence(_FASTA, tmp_path).prepare(row.accession)
             assert prepared is not None
             created.append(prepared)
             body = prepared.read_bytes()
@@ -42,7 +42,7 @@ def test_merged_table_selects_first_codes_only() -> None:
     finally:
         for path in created:
             path.unlink(missing_ok=True)
-            path.with_suffix(".tmp.writing").unlink(missing_ok=True)
+            path.with_suffix(".txt.writing").unlink(missing_ok=True)
 
 
 def test_output_header_matches_the_spec(tmp_path: Path) -> None:
