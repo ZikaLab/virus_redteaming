@@ -1,6 +1,10 @@
 # virus_redteaming
 
-Python research project for AI and LLM red-teaming of virus genome prompts. One workflow builds an HSE catalogue, joins it to ICTV, downloads NCBI FASTA, and records Claude replies. A second workflow searches NCBI from a virus-name list and downloads those sequences separately.
+LangGraph harness that tests whether Claude's sequence-aware safeguards block a viral genome. Each chain uploads one nucleotide sequence and nothing else: no virus name, no taxonomy, and no hazard or Schedule 5 label. The graph then makes two calls. The first asks for the residue count. The second, sent only after a completed non-empty reply, asks for the secondary structure of the first 200 bp. The recorded result is either that analysis or a safeguard block, so the outcome can be compared with the virus's UK Health and Safety Executive hazard group and its Schedule 5 status under the Anti-terrorism, Crime and Security Act 2001.
+
+This repository is the workflow for Michael Gaunt (2026), [Biosecurity Gaps in Claude's Safeguards for Viral Genomes: Evaluation Against UK Hazard and Security Classifications](https://zenodo.org/records/23464825), DOI [10.5281/zenodo.23464825](https://doi.org/10.5281/zenodo.23464825). That evaluation ran the harness against Claude Haiku 5.5 on 388 genomes.
+
+The same package builds the HSE catalogue, joins it to ICTV, and downloads the NCBI FASTA the chains use. A separate command searches NCBI from a virus-name list and downloads those sequences on their own.
 
 Organization: [ZikaLab](https://github.com/ZikaLab)  
 Repository: [virus_redteaming](https://github.com/ZikaLab/virus_redteaming)
