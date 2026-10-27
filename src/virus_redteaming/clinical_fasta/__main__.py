@@ -45,14 +45,17 @@ from virus_redteaming.clinical_fasta.representative_selection import (
 )
 from virus_redteaming.clinical_fasta.representative_sink import AtomicRepresentativeSink
 from virus_redteaming.clinical_fasta.screened_words import ScreenedWords
-from virus_redteaming.clinical_fasta.search_term import OutputSearchTermSource
+from virus_redteaming.clinical_fasta.search_term import (
+    OutputSearchTermSource,
+    SearchTermAlternatives,
+)
 from virus_redteaming.clinical_fasta.search_workflow import AccessionSearch
 from virus_redteaming.clinical_fasta.sink import AtomicPathFastaSink
 from virus_redteaming.clinical_fasta.term import EntrezTermComposer
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run search, download, or parse.
+    """Run search, download, parse, or the end-to-end run.
 
     ``LengthCutoff.DEFAULT_BP`` and ``LengthCutoff.MAX_SLEN`` live in ``length.py``.
     ``--min-length`` overrides ``DEFAULT_BP`` for one run and does not edit it.
@@ -67,11 +70,11 @@ def main(argv: list[str] | None = None) -> int:
         cutoff = _cutoff(args.min_length)
         if args.command == "search":
             result = _search(args.filename, cutoff)
-            print(result.path)
-            for virus in result.misses:
-                print(f"no accessions for Virus cell: {virus}", file=sys.stderr)
+            _print_search(result)
             if result.misses:
                 return 1
+        elif args.command == "run":
+            return _run(args.filename, cutoff)
         else:
             for path in _download(cutoff):
                 print(path)
@@ -90,6 +93,9 @@ def _parser() -> argparse.ArgumentParser:
     search = subcommands.add_parser("search")
     search.add_argument("filename", nargs="?", default=DEFAULT_QUERY_FILENAME)
     search.add_argument("--min-length", type=int, default=None)
+    run = subcommands.add_parser("run")
+    run.add_argument("filename", nargs="?", default=DEFAULT_QUERY_FILENAME)
+    run.add_argument("--min-length", type=int, default=None)
     download = subcommands.add_parser("download")
     download.add_argument("--min-length", type=int, default=None)
     subcommands.add_parser("parse")
@@ -104,6 +110,25 @@ def _cutoff(min_length: int | None) -> LengthCutoff:
     return LengthCutoff(bp=min_length)
 
 
+def _print_search(result: SearchResult) -> None:
+    print(result.path)
+    for virus in result.misses:
+        print(f"no accessions for Virus cell: {virus}", file=sys.stderr)
+
+
+def _run(filename: str, cutoff: LengthCutoff) -> int:
+    """Search, download the hits, then parse. A partial miss does not stop the rest."""
+    result = _search(filename, cutoff)
+    _print_search(result)
+    for path in _download(cutoff):
+        print(path)
+    for path in _parse():
+        print(path)
+    if result.misses:
+        return 1
+    return 0
+
+
 def _search(filename: str, cutoff: LengthCutoff) -> SearchResult:
     root = Path.cwd()
     query = OutputCsvPath(filename).resolve(root)
@@ -112,6 +137,7 @@ def _search(filename: str, cutoff: LengthCutoff) -> SearchResult:
         extra_term=OutputSearchTermSource(
             root / OUTPUT_DIRECTORY_NAME / SEARCH_TERM_FILENAME
         ),
+        alternatives=SearchTermAlternatives(),
         composer=EntrezTermComposer(),
         searcher=BiopythonEntrezClient(NcbiEntrezConfig.from_environment()),
         accession_list=AccessionList(),

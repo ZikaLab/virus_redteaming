@@ -14,7 +14,7 @@ class LengthCutoff:
     override ``DEFAULT_BP`` for one run and do not edit ``DEFAULT_BP``.
     """
 
-    DEFAULT_BP: ClassVar[int] = 8000
+    DEFAULT_BP: ClassVar[int] = 7000
     MAX_SLEN: ClassVar[int] = 999_999_999
     bp: int = DEFAULT_BP
 

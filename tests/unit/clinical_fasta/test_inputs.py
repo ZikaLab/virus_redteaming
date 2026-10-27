@@ -8,7 +8,10 @@ from virus_redteaming.clinical_fasta.csv_source import OutputCsvVirusSource
 from virus_redteaming.clinical_fasta.errors import NcbiInputError
 from virus_redteaming.clinical_fasta.length import LengthCutoff
 from virus_redteaming.clinical_fasta.paths import OutputCsvPath
-from virus_redteaming.clinical_fasta.search_term import OutputSearchTermSource
+from virus_redteaming.clinical_fasta.search_term import (
+    OutputSearchTermSource,
+    SearchTermAlternatives,
+)
 from virus_redteaming.clinical_fasta.term import EntrezTermComposer
 
 
@@ -55,6 +58,15 @@ def test_search_txt_rejects_empty_and_multiple_terms(tmp_path: Path) -> None:
         OutputSearchTermSource(empty).read()
     with pytest.raises(NcbiInputError):
         OutputSearchTermSource(many).read()
+
+
+def test_search_txt_or_splits_into_ordered_alternatives() -> None:
+    alternatives = SearchTermAlternatives().split(
+        "complete genome or complete sequence"
+    )
+    assert alternatives == ("complete genome", "complete sequence")
+    with pytest.raises(NcbiInputError):
+        SearchTermAlternatives().split("complete genome or ")
 
 
 def test_term_composer_quotes_virus_and_ands_extra() -> None:

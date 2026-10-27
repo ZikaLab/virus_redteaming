@@ -10,6 +10,7 @@ from virus_redteaming.clinical_fasta.protocols import (
     SearchTermSource,
     VirusQuerySource,
 )
+from virus_redteaming.clinical_fasta.search_term import SearchTermAlternatives
 from virus_redteaming.clinical_fasta.term import EntrezTermComposer
 
 
@@ -24,6 +25,7 @@ class AccessionSearch:
         self,
         viruses: VirusQuerySource,
         extra_term: SearchTermSource,
+        alternatives: SearchTermAlternatives,
         composer: EntrezTermComposer,
         searcher: NucleotideSearcher,
         accession_list: AccessionList,
@@ -32,6 +34,7 @@ class AccessionSearch:
     ) -> None:
         self._viruses = viruses
         self._extra_term = extra_term
+        self._alternatives = alternatives
         self._composer = composer
         self._searcher = searcher
         self._accession_list = accession_list
@@ -40,12 +43,11 @@ class AccessionSearch:
 
     def run(self) -> SearchResult:
         """Write hits. Return every Virus cell that came back empty."""
-        extra = self._extra_term.read()
+        alternatives = self._alternatives.split(self._extra_term.read())
         hits: list[AccessionHit] = []
         misses: list[str] = []
         for virus in self._viruses.read():
-            term = self._composer.compose(virus, extra, self._cutoff)
-            ids = self._accession_list.keep(self._searcher.search(term))
+            ids = self._ids_for(virus, alternatives)
             if not ids:
                 misses.append(virus)
                 continue
@@ -56,3 +58,13 @@ class AccessionSearch:
         if not hits:
             raise NcbiSearchMiss("every Virus cell returned no accessions")
         return SearchResult(path=self._sink.write(hits), misses=tuple(misses))
+
+    def _ids_for(self, virus: str, alternatives: tuple[str, ...]) -> tuple[str, ...]:
+        clause = self._cutoff.slen_clause()
+        ids: tuple[str, ...] = ()
+        for alternative in alternatives:
+            term = self._composer.compose(virus, alternative, self._cutoff)
+            ids = self._accession_list.keep(self._searcher.search(term))
+            if ids or f"AND {alternative} AND {clause}" not in term:
+                return ids
+        return ids
