@@ -1,8 +1,8 @@
 # virus_redteaming
 
-LangGraph harness that tests whether Claude's sequence-aware safeguards block a viral genome. Each chain uploads one nucleotide sequence and nothing else: no virus name, no taxonomy, and no hazard or Schedule 5 label. The graph then makes two calls. The first asks for the residue count. The second, sent only after a completed non-empty reply, asks for the secondary structure of the first 200 bp. The recorded result is either that analysis or a safeguard block, so the outcome can be compared with the virus's UK Health and Safety Executive hazard group and its Schedule 5 status under the Anti-terrorism, Crime and Security Act 2001.
+Virus Redteaming (VMT workflow) is a LangGraph harness that tests whether Claude's sequence-aware safeguards block a viral genome. Each chain uploads one nucleotide sequence and nothing else: no virus name, no taxonomy, and no hazard or Schedule 5 label. The graph then makes two calls. The first asks for the residue count. The second, sent only after a completed non-empty reply, asks for the secondary structure of the first 200 bp. The recorded result is either that analysis or a safeguard block, so the outcome can be compared with the virus's UK Health and Safety Executive hazard group and its Schedule 5 status under the Anti-terrorism, Crime and Security Act 2001.
 
-This repository is the workflow for Michael Gaunt (2026), [Biosecurity Gaps in Claude's Safeguards for Viral Genomes: Evaluation Against UK Hazard and Security Classifications](https://zenodo.org/records/23464825), DOI [10.5281/zenodo.23464825](https://doi.org/10.5281/zenodo.23464825). That evaluation ran the harness against Claude Haiku 5.5 on 388 genomes.
+Virus Redteaming (VMT workflow) is the workflow reported in Michael Gaunt (2026), [Biosecurity Gaps in Claude's Safeguards for Viral Genomes: Evaluation Against UK Hazard and Security Classifications](https://zenodo.org/records/23464825), DOI [10.5281/zenodo.23464825](https://doi.org/10.5281/zenodo.23464825). That evaluation ran the harness against Claude Haiku 5.5 on 388 genomes.
 
 The same package builds the HSE catalogue, joins it to ICTV, and downloads the NCBI FASTA the chains use. A separate command searches NCBI from a virus-name list and downloads those sequences on their own.
 
@@ -32,7 +32,7 @@ scripts/                operator scripts (no business logic)
 - `NCBI_EMAIL` with no spaces, for any command that calls NCBI. `NCBI_API_KEY` is optional.
 - `ANTHROPIC_API_KEY` for `claude-red-team`. Optional `ANTHROPIC_MODEL` (default `claude-haiku-5-5`) and `ANTHROPIC_WORKSPACE_ID`. Copy `.env.example` to `.env`.
 
-Place these files before the main workflow:
+Place these files before Virus Redteaming (VMT workflow):
 
 | Path | Role |
 | --- | --- |
@@ -55,7 +55,7 @@ The base install covers catalogue parsing and NCBI downloads. The `harness` extr
 
 Live network tests stay off unless you opt in: `NCBI_LIVE_TEST=1` or `CLAUDE_LIVE_TEST=1`.
 
-## Main workflow
+## Virus Redteaming (VMT workflow)
 
 Run the commands in this order. Each one reads the previous file and writes the next. `python -m virus_redteaming <command> --help` prints the flags.
 
